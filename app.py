@@ -412,7 +412,7 @@ def create_map(df_filtered, color_by='EUR_PAR_HAB'):
 def main():
     # Header
     st.markdown('<p class="main-header"><i class="iconoir-city"></i> Frais de représentation des maires</p>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Analyse des dépenses par commune - Données 2024 | Municipales 2026</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-header">Analyse des dépenses en frais de representation par commune en ayant déclaré sur leur budget 2024</p>', unsafe_allow_html=True)
 
     # Chargement des données
     df = load_data()
