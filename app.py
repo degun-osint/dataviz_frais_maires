@@ -432,15 +432,27 @@ def main():
 dans le cadre de leurs fonctions officielles : réceptions, cérémonies, cadeaux protocolaires,
 déplacements liés à la représentation de la commune, etc.
 
-**Pourquoi les analyser ?**
-- **Transparence démocratique** : Ces dépenses sont financées par l'argent public et doivent être
-  proportionnées aux besoins réels de la commune.
-- **Indicateur de gestion** : Un ratio élevé par rapport au budget total peut révéler des pratiques
-  à questionner.
-- **Élections 2026** : À l'approche des municipales, connaître ces données permet aux citoyens
-  d'évaluer la gestion de leurs élus.
+**Un cadre juridique très souple**
 
-*Source : Balances comptables des communes 2024 (data.gouv.fr)*
+L'article [L2123-19 du CGCT](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006389785)
+tient en une seule ligne : *« Le conseil municipal peut voter, sur les ressources ordinaires,
+des indemnités au maire pour frais de représentation. »* C'est tout.
+
+En pratique, le conseil municipal peut choisir entre :
+- Un **forfait** versé sans obligation de justificatifs
+- Un système de **remboursement** sur présentation de factures
+
+La loi **ne fixe aucune liste** des dépenses autorisées. C'est la jurisprudence qui, au fil des
+affaires, précise ce qui est acceptable ou non. Les maires doivent conserver leurs justificatifs
+car ils sont [communicables sur demande](https://www.conseil-etat.fr/fr/arianeweb/CE/decision/2023-02-08/452521) (Conseil d'État, 2023),
+mais dans le cas du forfait, **aucun contrôle systématique n'est effectué**.
+
+**Pourquoi analyser ces données ?**
+- **Transparence** : Ces dépenses sont financées par l'argent public
+- **Disparités importantes** : Les montants varient considérablement d'une commune à l'autre
+- **Élections 2026** : Connaître ces données permet d'évaluer la gestion des élus
+
+*Sources : [Balances comptables 2024](https://www.data.gouv.fr/datasets/balances-comptables-des-communes-en-2024/) (data.gouv.fr) — [Mémo AMIF](https://amif.asso.fr/wp-content/uploads/2024/07/1-MEMO-NOTES-DE-FRAIS.pdf)*
         """)
 
     # Chargement des données
