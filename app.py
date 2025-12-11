@@ -613,7 +613,7 @@ def main():
         if show_budget and 'Charges tot. (€)' in df_display.columns:
             df_display['Charges tot. (€)'] = df_display['Charges tot. (€)'].apply(lambda x: fmt_fr(x))
             df_display['Personnel (€)'] = df_display['Personnel (€)'].apply(lambda x: fmt_fr(x))
-            df_display['Ratio (%)'] = df_display['Ratio (%)'].apply(lambda x: fmt_fr(x * 100, 3))
+            df_display['Ratio (%)'] = df_display['Ratio (%)'].apply(lambda x: fmt_fr(x, 3))
 
         st.dataframe(
             df_display,
@@ -813,10 +813,10 @@ def main():
                 st.metric("Charges personnel", f"{fmt_fr(total_personnel / 1e9, 2)} Mds €")
             with col_b3:
                 ratio_moy = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0]['RATIO_FRAIS_REP'].mean()
-                st.metric("Ratio frais rep. moyen", f"{fmt_fr(ratio_moy * 100, 3)} %")
+                st.metric("Ratio frais rep. moyen", f"{fmt_fr(ratio_moy, 3)} %")
             with col_b4:
                 ratio_max = df_filtered['RATIO_FRAIS_REP'].max()
-                st.metric("Ratio frais rep. max", f"{fmt_fr(ratio_max * 100, 2)} %")
+                st.metric("Ratio frais rep. max", f"{fmt_fr(ratio_max, 2)} %")
 
             st.markdown("---")
 
@@ -889,7 +889,7 @@ def main():
             # Distribution du ratio frais de représentation
             st.markdown("#### Distribution du ratio frais de représentation / charges totales")
             df_ratio = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0].copy()
-            df_ratio['RATIO_PERCENT'] = df_ratio['RATIO_FRAIS_REP'] * 100
+            df_ratio['RATIO_PERCENT'] = df_ratio['RATIO_FRAIS_REP']
 
             fig_ratio = px.histogram(
                 df_ratio,
@@ -923,7 +923,7 @@ def main():
             top_ratio['Pop.'] = top_ratio['Pop.'].apply(lambda x: fmt_fr(x))
             top_ratio['Frais rep. (€)'] = top_ratio['Frais rep. (€)'].apply(lambda x: fmt_fr(x, 2))
             top_ratio['Charges totales (€)'] = top_ratio['Charges totales (€)'].apply(lambda x: fmt_fr(x))
-            top_ratio['Ratio (%)'] = top_ratio['Ratio (%)'].apply(lambda x: fmt_fr(x * 100, 3))
+            top_ratio['Ratio (%)'] = top_ratio['Ratio (%)'].apply(lambda x: fmt_fr(x, 3))
             st.dataframe(top_ratio, use_container_width=True, hide_index=True)
 
         else:
