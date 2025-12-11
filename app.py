@@ -696,20 +696,22 @@ def main():
             col_names.extend(['Charges tot. (€)', 'Ratio (%)'])
         df_display.columns = col_names
 
-        # Formatage français des colonnes numériques
-        df_display['Population'] = df_display['Population'].apply(lambda x: fmt_fr(x))
-        df_display['Frais (€)'] = df_display['Frais (€)'].apply(lambda x: fmt_fr(x, 2))
-        df_display['EUR/hab'] = df_display['EUR/hab'].apply(lambda x: fmt_fr(x, 2))
-
+        # Configuration des colonnes pour formatage + tri correct
+        column_config = {
+            'Population': st.column_config.NumberColumn(format="%d"),
+            'Frais (€)': st.column_config.NumberColumn(format="%.2f €"),
+            'EUR/hab': st.column_config.NumberColumn(format="%.2f €"),
+        }
         if show_budget and 'Charges tot. (€)' in df_display.columns:
-            df_display['Charges tot. (€)'] = df_display['Charges tot. (€)'].apply(lambda x: fmt_fr(x))
-            df_display['Ratio (%)'] = df_display['Ratio (%)'].apply(lambda x: fmt_fr(x, 3))
+            column_config['Charges tot. (€)'] = st.column_config.NumberColumn(format="%.0f €")
+            column_config['Ratio (%)'] = st.column_config.NumberColumn(format="%.3f %%")
 
         st.dataframe(
             df_display,
             use_container_width=True,
             height=500,
-            hide_index=True
+            hide_index=True,
+            column_config=column_config
         )
 
         # Export CSV
