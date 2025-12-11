@@ -929,6 +929,66 @@ def main():
         else:
             st.warning("Les données budgétaires ne sont pas disponibles pour cette sélection.")
 
+    # Section méthodologie
+    st.markdown("---")
+    with st.expander("📋 Méthodologie - Traitement des données"):
+        st.markdown("""
+### Cycle du renseignement : phase de traitement
+
+Cette visualisation illustre la **phase de traitement** du cycle du renseignement OSINT,
+où les données brutes collectées sont transformées en informations exploitables.
+
+---
+
+#### 1. Frais de représentation des maires
+
+**Source** : Balances comptables des communes 2024 (data.gouv.fr)
+
+**Compte comptable** : `65316` - *Frais de représentation du maire*
+
+Ce compte enregistre les dépenses liées aux fonctions de représentation du maire :
+réceptions officielles, cérémonies, déplacements protocolaires, etc.
+
+**Extraction** : Filtrage des lignes où `COMPTE = '65316'` dans la balance comptable,
+puis agrégation par SIREN de commune.
+
+---
+
+#### 2. Dépenses globales des communes
+
+**Méthode** : Agrégation de tous les comptes de **classe 6** (charges) de la balance comptable.
+
+| Catégorie | Comptes | Description |
+|-----------|---------|-------------|
+| **Personnel** | 64* | Rémunérations, charges sociales |
+| **Achats/Services** | 60*, 61*, 62* | Fournitures, prestations, sous-traitance |
+| **Autres gestion** | 65* | Dont frais de représentation (65316) |
+| **Financières** | 66* | Intérêts d'emprunts |
+| **Exceptionnelles** | 67* | Charges non récurrentes |
+| **Amortissements** | 68* | Dotations aux amortissements |
+
+**Colonne utilisée** : `OBNETDEB` (Opérations Budgétaires Nettes - Débit)
+
+---
+
+#### 3. Ratio frais de représentation
+
+```
+RATIO = FRAIS_REPRESENTATION / TOTAL_CHARGES × 100
+```
+
+Ce ratio permet de comparer les communes entre elles indépendamment de leur taille budgétaire.
+
+---
+
+#### 4. Jointure des données
+
+Les trois sources (balances comptables, nuances politiques, population INSEE) sont
+fusionnées via le **code SIREN** de chaque commune, garantissant l'unicité des correspondances.
+
+**Communes analysées** : 1 208 communes ayant déclaré des frais de représentation en 2024.
+        """)
+
     # Footer avec sources
     st.markdown("---")
     footer_html = """<div class="sources-container">
