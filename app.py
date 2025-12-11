@@ -329,9 +329,13 @@ def create_map(df_filtered, color_by='EUR_PAR_HAB'):
     MARKER_RADIUS = 6
 
     # Palette de couleurs selon le critère
-    if color_by in ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION']:
+    if color_by in ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'RATIO_FRAIS_REP']:
         # Échelle de couleurs pour la valeur choisie
-        max_val = df_filtered[color_by].quantile(0.95)  # Cap à 95e percentile
+        if color_by == 'RATIO_FRAIS_REP':
+            # Pour le ratio, on exclut les 0 du calcul du percentile
+            max_val = df_filtered[df_filtered[color_by] > 0][color_by].quantile(0.95)
+        else:
+            max_val = df_filtered[color_by].quantile(0.95)  # Cap à 95e percentile
 
         for _, row in df_filtered.iterrows():
             # Vérifier que les coordonnées sont valides (numériques et dans les bornes)
@@ -355,6 +359,8 @@ def create_map(df_filtered, color_by='EUR_PAR_HAB'):
             # Tooltip selon le mode
             if color_by == 'EUR_PAR_HAB':
                 tooltip_text = f"{row['NOM_COMMUNE']}: {fmt_fr(row['EUR_PAR_HAB'], 2)} €/hab"
+            elif color_by == 'RATIO_FRAIS_REP':
+                tooltip_text = f"{row['NOM_COMMUNE']}: {fmt_fr(row['RATIO_FRAIS_REP'], 2)} %"
             else:
                 tooltip_text = f"{row['NOM_COMMUNE']}: {fmt_fr(row['FRAIS_REPRESENTATION'])} €"
 
@@ -364,6 +370,7 @@ def create_map(df_filtered, color_by='EUR_PAR_HAB'):
             Population: {fmt_fr(row['POP_2022'])}<br>
             Frais: {fmt_fr(row['FRAIS_REPRESENTATION'], 2)} €<br>
             EUR/hab: {fmt_fr(row['EUR_PAR_HAB'], 2)} €<br>
+            Ratio: {fmt_fr(row.get('RATIO_FRAIS_REP', 0), 2)} %<br>
             Politique: {row['COUL_POL']}
             """
 
@@ -507,7 +514,7 @@ def main():
         with col_map2:
             color_option = st.radio(
                 "Colorier par :",
-                ['EUR/habitant', 'Frais totaux', 'Couleur politique'],
+                ['EUR/habitant', 'Frais totaux', 'Ratio budget', 'Couleur politique'],
                 index=0
             )
 
@@ -537,6 +544,19 @@ def main():
 
 *95e percentile*
                 """, unsafe_allow_html=True)
+            elif color_option == 'Ratio budget':
+                max_val = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0]['RATIO_FRAIS_REP'].quantile(0.95)
+                seuil_vert = max_val * 0.33
+                seuil_orange = max_val * 0.66
+                st.markdown(f"""
+**Légende**
+
+<span style="color:#2ecc71">●</span> < {fmt_fr(seuil_vert, 2)} %<br>
+<span style="color:#f39c12">●</span> {fmt_fr(seuil_vert, 2)} – {fmt_fr(seuil_orange, 2)} %<br>
+<span style="color:#e74c3c">●</span> > {fmt_fr(seuil_orange, 2)} %
+
+*Ratio frais rep. / charges totales*
+                """, unsafe_allow_html=True)
             else:
                 st.markdown("""
 **Légende**
@@ -554,6 +574,8 @@ def main():
                 color_by = 'EUR_PAR_HAB'
             elif color_option == 'Frais totaux':
                 color_by = 'FRAIS_REPRESENTATION'
+            elif color_option == 'Ratio budget':
+                color_by = 'RATIO_FRAIS_REP'
             else:
                 color_by = 'COUL_POL'
             m = create_map(df_filtered, color_by=color_by)
@@ -761,21 +783,24 @@ def main():
         with col_p1:
             st.markdown(f'<h4><i class="iconoir-arrow-up"></i> Top {nb_resultats} - Plus dépensiers (EUR/hab)</h4>', unsafe_allow_html=True)
             top_n = df_palmares.nlargest(nb_resultats, 'EUR_PAR_HAB')[
-                ['NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022', 'EUR_PAR_HAB', 'COUL_POL']
+                ['NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022', 'EUR_PAR_HAB', 'TOTAL_CHARGES', 'RATIO_FRAIS_REP', 'COUL_POL']
             ].reset_index(drop=True)
-            top_n.columns = ['Commune', 'Dépt', 'Pop.', 'EUR/hab', 'Politique']
+            top_n.columns = ['Commune', 'Dépt', 'Pop.', 'EUR/hab', 'Budget (€)', 'Ratio (%)', 'Politique']
             top_n['Pop.'] = top_n['Pop.'].apply(lambda x: fmt_fr(x))
             top_n['EUR/hab'] = top_n['EUR/hab'].apply(lambda x: fmt_fr(x, 2))
+            top_n['Budget (€)'] = top_n['Budget (€)'].apply(lambda x: fmt_fr(x))
+            top_n['Ratio (%)'] = top_n['Ratio (%)'].apply(lambda x: fmt_fr(x, 2))
             st.dataframe(top_n, use_container_width=True, hide_index=True)
 
         with col_p2:
             st.markdown(f'<h4><i class="iconoir-arrow-down"></i> Top {nb_resultats} - Communes à 0€</h4>', unsafe_allow_html=True)
             zero_frais = df_palmares[df_palmares['FRAIS_REPRESENTATION'] == 0].nlargest(nb_resultats, 'POP_2022')[
-                ['NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022', 'EUR_PAR_HAB', 'COUL_POL']
+                ['NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022', 'EUR_PAR_HAB', 'TOTAL_CHARGES', 'COUL_POL']
             ].reset_index(drop=True)
-            zero_frais.columns = ['Commune', 'Dépt', 'Pop.', 'EUR/hab', 'Politique']
+            zero_frais.columns = ['Commune', 'Dépt', 'Pop.', 'EUR/hab', 'Budget (€)', 'Politique']
             zero_frais['Pop.'] = zero_frais['Pop.'].apply(lambda x: fmt_fr(x))
             zero_frais['EUR/hab'] = zero_frais['EUR/hab'].apply(lambda x: fmt_fr(x, 2))
+            zero_frais['Budget (€)'] = zero_frais['Budget (€)'].apply(lambda x: fmt_fr(x))
             st.dataframe(zero_frais, use_container_width=True, hide_index=True)
 
         # Stats par couleur politique
@@ -984,7 +1009,7 @@ Ce ratio permet de comparer les communes entre elles indépendamment de leur tai
 #### 4. Jointure des données
 
 Les trois sources (balances comptables, nuances politiques, population INSEE) sont
-fusionnées via le **code SIREN** de chaque commune, garantissant l'unicité des correspondances.
+fusionnées via le **code INSEE** de chaque commune, garantissant l'unicité des correspondances.
 
 **Communes analysées** : 1 208 communes ayant déclaré des frais de représentation en 2024.
         """)
