@@ -431,9 +431,21 @@ def main():
     # Sidebar - Filtres
     st.sidebar.header("Filtres")
 
-    # Filtre département
-    departements = ['Tous'] + sorted(df['DEPARTEMENT'].unique().tolist())
-    dept_selection = st.sidebar.selectbox("Département", departements)
+    # Recherche par nom
+    search_commune = st.sidebar.text_input(
+        "Rechercher une commune",
+        placeholder="Tapez un nom...",
+        key="search_commune"
+    )
+
+    # Filtre département(s)
+    depts_disponibles = sorted(df['DEPARTEMENT'].dropna().unique().tolist())
+    selected_depts = st.sidebar.multiselect(
+        "Département(s)",
+        options=depts_disponibles,
+        default=[],
+        placeholder="Tous les départements"
+    )
 
     # Filtre population
     pop_min, pop_max = st.sidebar.slider(
@@ -453,8 +465,28 @@ def main():
         step=0.1
     )
 
+    # Filtre Frais totaux
+    frais_min, frais_max = st.sidebar.slider(
+        "Frais totaux (€)",
+        min_value=0.0,
+        max_value=float(df['FRAIS_REPRESENTATION'].max()),
+        value=(0.0, float(df['FRAIS_REPRESENTATION'].max())),
+        step=100.0
+    )
+
+    # Filtre Ratio budget
+    if 'RATIO_FRAIS_REP' in df.columns:
+        ratio_min, ratio_max = st.sidebar.slider(
+            "Ratio budget (%)",
+            min_value=0.0,
+            max_value=float(df['RATIO_FRAIS_REP'].max()),
+            value=(0.0, float(df['RATIO_FRAIS_REP'].max())),
+            step=0.01
+        )
+    else:
+        ratio_min, ratio_max = 0.0, 100.0
+
     # Filtre couleur politique
-    couleurs_pol = ['Toutes'] + sorted(df['COUL_POL'].unique().tolist())
     coul_selection = st.sidebar.multiselect(
         "Couleur politique",
         options=df['COUL_POL'].unique().tolist(),
@@ -464,16 +496,27 @@ def main():
     # Application des filtres
     df_filtered = df.copy()
 
-    if dept_selection != 'Tous':
-        df_filtered = df_filtered[df_filtered['DEPARTEMENT'] == dept_selection]
+    if search_commune:
+        df_filtered = df_filtered[df_filtered['NOM_COMMUNE'].str.contains(search_commune, case=False, na=False)]
+
+    if selected_depts:
+        df_filtered = df_filtered[df_filtered['DEPARTEMENT'].isin(selected_depts)]
 
     df_filtered = df_filtered[
         (df_filtered['POP_2022'] >= pop_min) &
         (df_filtered['POP_2022'] <= pop_max) &
         (df_filtered['EUR_PAR_HAB'] >= eur_min) &
         (df_filtered['EUR_PAR_HAB'] <= eur_max) &
+        (df_filtered['FRAIS_REPRESENTATION'] >= frais_min) &
+        (df_filtered['FRAIS_REPRESENTATION'] <= frais_max) &
         (df_filtered['COUL_POL'].isin(coul_selection))
     ]
+
+    if 'RATIO_FRAIS_REP' in df_filtered.columns:
+        df_filtered = df_filtered[
+            (df_filtered['RATIO_FRAIS_REP'] >= ratio_min) &
+            (df_filtered['RATIO_FRAIS_REP'] <= ratio_max)
+        ]
 
     # Métriques clés
     st.markdown('<h3><i class="iconoir-stats-report"></i> Chiffres clés</h3>', unsafe_allow_html=True)
@@ -575,85 +618,7 @@ def main():
     with tab2:
         st.markdown('<h3><i class="iconoir-table-rows"></i> Données détaillées</h3>', unsafe_allow_html=True)
 
-        # Filtres du tableau
-        with st.expander("🔍 Filtres avancés", expanded=False):
-            col_f1, col_f2 = st.columns(2)
-
-            with col_f1:
-                # Recherche par nom
-                search_commune = st.text_input(
-                    "Rechercher une commune",
-                    placeholder="Tapez un nom de commune...",
-                    key="search_commune"
-                )
-
-                # Filtre par département
-                depts_disponibles = sorted(df_filtered['DEPARTEMENT'].dropna().unique().tolist())
-                selected_depts = st.multiselect(
-                    "Filtrer par département(s)",
-                    options=depts_disponibles,
-                    default=[],
-                    placeholder="Tous les départements",
-                    key="table_depts"
-                )
-
-                # Filtre EUR/hab
-                eur_range = st.slider(
-                    "EUR par habitant",
-                    min_value=0.0,
-                    max_value=float(df_filtered['EUR_PAR_HAB'].max()),
-                    value=(0.0, float(df_filtered['EUR_PAR_HAB'].max())),
-                    step=0.1,
-                    key="table_eur_range"
-                )
-
-            with col_f2:
-                # Filtre Frais totaux
-                frais_range = st.slider(
-                    "Frais totaux (€)",
-                    min_value=0.0,
-                    max_value=float(df_filtered['FRAIS_REPRESENTATION'].max()),
-                    value=(0.0, float(df_filtered['FRAIS_REPRESENTATION'].max())),
-                    step=100.0,
-                    key="table_frais_range"
-                )
-
-                # Filtre Ratio si disponible
-                if 'RATIO_FRAIS_REP' in df_filtered.columns:
-                    ratio_range = st.slider(
-                        "Ratio budget (%)",
-                        min_value=0.0,
-                        max_value=float(df_filtered['RATIO_FRAIS_REP'].max()),
-                        value=(0.0, float(df_filtered['RATIO_FRAIS_REP'].max())),
-                        step=0.01,
-                        key="table_ratio_range"
-                    )
-                else:
-                    ratio_range = None
-
-        # Appliquer les filtres du tableau
-        df_table = df_filtered.copy()
-
-        if search_commune:
-            df_table = df_table[df_table['NOM_COMMUNE'].str.contains(search_commune, case=False, na=False)]
-
-        if selected_depts:
-            df_table = df_table[df_table['DEPARTEMENT'].isin(selected_depts)]
-
-        df_table = df_table[
-            (df_table['EUR_PAR_HAB'] >= eur_range[0]) &
-            (df_table['EUR_PAR_HAB'] <= eur_range[1]) &
-            (df_table['FRAIS_REPRESENTATION'] >= frais_range[0]) &
-            (df_table['FRAIS_REPRESENTATION'] <= frais_range[1])
-        ]
-
-        if ratio_range is not None:
-            df_table = df_table[
-                (df_table['RATIO_FRAIS_REP'] >= ratio_range[0]) &
-                (df_table['RATIO_FRAIS_REP'] <= ratio_range[1])
-            ]
-
-        st.caption(f"{len(df_table)} communes après filtres")
+        st.caption(f"{len(df_filtered)} communes")
 
         # Option pour afficher les colonnes budget
         show_budget = st.checkbox("Afficher les données budgétaires", value=True)
@@ -662,12 +627,12 @@ def main():
         columns_display = ['CODE_COMMUNE', 'NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022',
                           'FRAIS_REPRESENTATION', 'EUR_PAR_HAB', 'COUL_POL']
 
-        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
             columns_display.extend(['TOTAL_CHARGES', 'RATIO_FRAIS_REP'])
 
         # Options de tri
         sort_options = ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'POP_2022', 'NOM_COMMUNE']
-        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
             sort_options.extend(['TOTAL_CHARGES', 'RATIO_FRAIS_REP'])
 
         sort_col = st.selectbox(
@@ -685,14 +650,14 @@ def main():
 
         sort_order = st.checkbox("Ordre décroissant", value=True)
 
-        df_display = df_table[columns_display].sort_values(
+        df_display = df_filtered[columns_display].sort_values(
             by=sort_col,
             ascending=not sort_order
         )
 
         # Renommer les colonnes pour l'affichage
         col_names = ['INSEE', 'Commune', 'Dépt', 'Population', 'Frais (€)', 'EUR/hab', 'Politique']
-        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
             col_names.extend(['Charges tot. (€)', 'Ratio (%)'])
         df_display.columns = col_names
 
@@ -715,7 +680,7 @@ def main():
         )
 
         # Export CSV
-        csv = df_table.to_csv(index=False, sep=';', decimal=',')
+        csv = df_filtered.to_csv(index=False, sep=';', decimal=',')
         st.download_button(
             label="Télécharger les données filtrées (CSV)",
             data=csv,
