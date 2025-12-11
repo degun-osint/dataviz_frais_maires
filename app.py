@@ -127,21 +127,11 @@ st.markdown("""
         width: 16px;
         height: 16px;
         margin-right: 6px;
-        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='currentColor' stroke-width='1.5'%3E%3Cpath d='M3 21h18M3 21V9l4-1 4 3 4-4 4 2v12'/%3E%3C/svg%3E") center/contain no-repeat;
-        vertical-align: middle;
-        opacity: 0.6;
-    }
-    .stTabs [data-baseweb="tab"]:nth-child(4)::before {
-        content: "";
-        display: inline-block;
-        width: 16px;
-        height: 16px;
-        margin-right: 6px;
         background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='currentColor' stroke-width='1.5'%3E%3Cpath d='M6 9h2v12H6z M10 3h4v18h-4z M16 7h2v14h-2z'/%3E%3C/svg%3E") center/contain no-repeat;
         vertical-align: middle;
         opacity: 0.6;
     }
-    .stTabs [data-baseweb="tab"]:nth-child(5)::before {
+    .stTabs [data-baseweb="tab"]:nth-child(4)::before {
         content: "";
         display: inline-block;
         width: 16px;
@@ -503,7 +493,7 @@ def main():
     st.markdown("---")
 
     # Onglets principaux
-    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Carte", "Tableau", "Analyses", "Palmarès", "Budget"])
+    tab1, tab2, tab3, tab4 = st.tabs(["Carte", "Tableau", "Palmarès", "Budget"])
 
     # TAB 1 - CARTE
     with tab1:
@@ -731,109 +721,8 @@ def main():
             mime="text/csv"
         )
 
-    # TAB 3 - ANALYSES
+    # TAB 3 - PALMARÈS
     with tab3:
-        st.markdown('<h3><i class="iconoir-graph-up"></i> Analyses graphiques</h3>', unsafe_allow_html=True)
-
-        col_g1, col_g2 = st.columns(2)
-
-        with col_g1:
-            # Boxplot par couleur politique
-            st.markdown("#### EUR/hab par couleur politique")
-            fig_box = px.box(
-                df_filtered[df_filtered['COUL_POL'].isin(['Gauche', 'Droite', 'Centre', 'Extrême droite'])],
-                x='COUL_POL',
-                y='EUR_PAR_HAB',
-                color='COUL_POL',
-                color_discrete_map={
-                    'Gauche': '#e74c3c',
-                    'Droite': '#3498db',
-                    'Centre': '#f39c12',
-                    'Extrême droite': '#1a1a2e'
-                }
-            )
-            fig_box.update_layout(
-                showlegend=False,
-                xaxis_title="",
-                yaxis_title="EUR par habitant",
-                separators=", "
-            )
-            st.plotly_chart(fig_box, use_container_width=True)
-
-        with col_g2:
-            # Scatter population vs EUR/hab
-            st.markdown("#### Population vs EUR/hab")
-            fig_scatter = px.scatter(
-                df_filtered,
-                x='POP_2022',
-                y='EUR_PAR_HAB',
-                color='COUL_POL',
-                hover_name='NOM_COMMUNE',
-                hover_data=['DEPARTEMENT', 'FRAIS_REPRESENTATION'],
-                opacity=0.6,
-                color_discrete_map={
-                    'Gauche': '#e74c3c',
-                    'Droite': '#3498db',
-                    'Centre': '#f39c12',
-                    'Extrême droite': '#1a1a2e',
-                    'Courants politiques divers': '#9b59b6',
-                    'Non classé': '#95a5a6',
-                                    }
-            )
-            fig_scatter.update_layout(
-                xaxis_title="Population",
-                yaxis_title="EUR par habitant",
-                xaxis_type="log",
-                separators=", "
-            )
-            st.plotly_chart(fig_scatter, use_container_width=True)
-
-        # Histogramme distribution
-        st.markdown("#### Distribution des EUR/hab")
-        fig_hist = px.histogram(
-            df_filtered,
-            x='EUR_PAR_HAB',
-            nbins=50,
-            color='COUL_POL',
-            marginal='box',
-            color_discrete_map={
-                'Gauche': '#e74c3c',
-                'Droite': '#3498db',
-                'Centre': '#f39c12',
-                'Extrême droite': '#1a1a2e',
-                'Courants politiques divers': '#9b59b6',
-                'Non classé': '#95a5a6',
-                            }
-        )
-        fig_hist.update_layout(
-            xaxis_title="EUR par habitant",
-            yaxis_title="Nombre de communes",
-            separators=", "
-        )
-        st.plotly_chart(fig_hist, use_container_width=True)
-
-        # Moyennes par catégorie
-        st.markdown("#### Moyenne EUR/hab par catégorie de population")
-        df_cat = df_filtered.groupby('CATEGORIE_POP', observed=True)['EUR_PAR_HAB'].agg(['mean', 'median', 'count']).reset_index()
-        df_cat.columns = ['Catégorie', 'Moyenne', 'Médiane', 'Nb communes']
-
-        fig_bar = px.bar(
-            df_cat,
-            x='Catégorie',
-            y=['Moyenne', 'Médiane'],
-            barmode='group',
-            text_auto='.2f'
-        )
-        fig_bar.update_layout(
-            xaxis_title="",
-            yaxis_title="EUR par habitant",
-            legend_title="",
-            separators=", "
-        )
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-    # TAB 4 - PALMARÈS
-    with tab4:
         st.markdown('<h3><i class="iconoir-trophy"></i> Palmarès</h3>', unsafe_allow_html=True)
 
         # Filtres spécifiques au palmarès
@@ -898,8 +787,8 @@ def main():
         stats_pol['Nb communes'] = stats_pol['Nb communes'].apply(lambda x: fmt_fr(x))
         st.dataframe(stats_pol, use_container_width=True)
 
-    # TAB 5 - BUDGET
-    with tab5:
+    # TAB 4 - BUDGET
+    with tab4:
         st.markdown('<h3><i class="iconoir-wallet"></i> Analyse budgétaire</h3>', unsafe_allow_html=True)
         st.markdown("Comparaison des frais de représentation avec le budget global des communes")
 
