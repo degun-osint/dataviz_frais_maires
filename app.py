@@ -656,7 +656,7 @@ def main():
         st.caption(f"{len(df_table)} communes après filtres")
 
         # Option pour afficher les colonnes budget
-        show_budget = st.checkbox("Afficher les données budgétaires", value=False)
+        show_budget = st.checkbox("Afficher les données budgétaires", value=True)
 
         # Colonnes à afficher
         columns_display = ['CODE_COMMUNE', 'NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022',
