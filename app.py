@@ -425,6 +425,24 @@ def main():
     st.markdown('<h1 class="main-header"><i class="iconoir-city"></i> Frais de représentation des maires</h1>', unsafe_allow_html=True)
     st.markdown('<p class="sub-header">Analyse des dépenses en frais de representation par commune en ayant déclaré sur leur budget 2024</p>', unsafe_allow_html=True)
 
+    # Définition des frais de représentation
+    with st.expander("Qu'est-ce que les frais de représentation ?", expanded=False):
+        st.markdown("""
+**Les frais de représentation** (compte 65316) correspondent aux dépenses engagées par les maires
+dans le cadre de leurs fonctions officielles : réceptions, cérémonies, cadeaux protocolaires,
+déplacements liés à la représentation de la commune, etc.
+
+**Pourquoi les analyser ?**
+- **Transparence démocratique** : Ces dépenses sont financées par l'argent public et doivent être
+  proportionnées aux besoins réels de la commune.
+- **Indicateur de gestion** : Un ratio élevé par rapport au budget total peut révéler des pratiques
+  à questionner.
+- **Élections 2026** : À l'approche des municipales, connaître ces données permet aux citoyens
+  d'évaluer la gestion de leurs élus.
+
+*Source : Balances comptables des communes 2024 (data.gouv.fr)*
+        """)
+
     # Chargement des données
     df = load_data()
 
