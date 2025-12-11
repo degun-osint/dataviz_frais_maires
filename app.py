@@ -585,6 +585,73 @@ def main():
     with tab2:
         st.markdown('<h3><i class="iconoir-table-rows"></i> Données détaillées</h3>', unsafe_allow_html=True)
 
+        # Filtres du tableau
+        with st.expander("🔍 Filtres avancés", expanded=False):
+            col_f1, col_f2 = st.columns(2)
+
+            with col_f1:
+                # Recherche par nom
+                search_commune = st.text_input(
+                    "Rechercher une commune",
+                    placeholder="Tapez un nom de commune...",
+                    key="search_commune"
+                )
+
+                # Filtre EUR/hab
+                eur_range = st.slider(
+                    "EUR par habitant",
+                    min_value=0.0,
+                    max_value=float(df_filtered['EUR_PAR_HAB'].max()),
+                    value=(0.0, float(df_filtered['EUR_PAR_HAB'].max())),
+                    step=0.1,
+                    key="table_eur_range"
+                )
+
+            with col_f2:
+                # Filtre Frais totaux
+                frais_range = st.slider(
+                    "Frais totaux (€)",
+                    min_value=0.0,
+                    max_value=float(df_filtered['FRAIS_REPRESENTATION'].max()),
+                    value=(0.0, float(df_filtered['FRAIS_REPRESENTATION'].max())),
+                    step=100.0,
+                    key="table_frais_range"
+                )
+
+                # Filtre Ratio si disponible
+                if 'RATIO_FRAIS_REP' in df_filtered.columns:
+                    ratio_range = st.slider(
+                        "Ratio budget (%)",
+                        min_value=0.0,
+                        max_value=float(df_filtered['RATIO_FRAIS_REP'].max()),
+                        value=(0.0, float(df_filtered['RATIO_FRAIS_REP'].max())),
+                        step=0.01,
+                        key="table_ratio_range"
+                    )
+                else:
+                    ratio_range = None
+
+        # Appliquer les filtres du tableau
+        df_table = df_filtered.copy()
+
+        if search_commune:
+            df_table = df_table[df_table['NOM_COMMUNE'].str.contains(search_commune, case=False, na=False)]
+
+        df_table = df_table[
+            (df_table['EUR_PAR_HAB'] >= eur_range[0]) &
+            (df_table['EUR_PAR_HAB'] <= eur_range[1]) &
+            (df_table['FRAIS_REPRESENTATION'] >= frais_range[0]) &
+            (df_table['FRAIS_REPRESENTATION'] <= frais_range[1])
+        ]
+
+        if ratio_range is not None:
+            df_table = df_table[
+                (df_table['RATIO_FRAIS_REP'] >= ratio_range[0]) &
+                (df_table['RATIO_FRAIS_REP'] <= ratio_range[1])
+            ]
+
+        st.caption(f"{len(df_table)} communes après filtres")
+
         # Option pour afficher les colonnes budget
         show_budget = st.checkbox("Afficher les données budgétaires", value=False)
 
@@ -592,12 +659,12 @@ def main():
         columns_display = ['CODE_COMMUNE', 'NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022',
                           'FRAIS_REPRESENTATION', 'EUR_PAR_HAB', 'COUL_POL']
 
-        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
             columns_display.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
 
         # Options de tri
         sort_options = ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'POP_2022', 'NOM_COMMUNE']
-        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
             sort_options.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
 
         sort_col = st.selectbox(
@@ -616,14 +683,14 @@ def main():
 
         sort_order = st.checkbox("Ordre décroissant", value=True)
 
-        df_display = df_filtered[columns_display].sort_values(
+        df_display = df_table[columns_display].sort_values(
             by=sort_col,
             ascending=not sort_order
         )
 
         # Renommer les colonnes pour l'affichage
         col_names = ['INSEE', 'Commune', 'Dépt', 'Population', 'Frais (€)', 'EUR/hab', 'Politique']
-        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+        if show_budget and 'TOTAL_CHARGES' in df_table.columns:
             col_names.extend(['Charges tot. (€)', 'Personnel (€)', 'Ratio (%)'])
         df_display.columns = col_names
 
@@ -645,7 +712,7 @@ def main():
         )
 
         # Export CSV
-        csv = df_filtered.to_csv(index=False, sep=';', decimal=',')
+        csv = df_table.to_csv(index=False, sep=';', decimal=',')
         st.download_button(
             label="Télécharger les données filtrées (CSV)",
             data=csv,
@@ -958,9 +1025,9 @@ def main():
     st.markdown("---")
     with st.expander("📋 Méthodologie - Traitement des données"):
         st.markdown("""
-### Cycle du renseignement : phase de traitement
+### Méthodologie de traitement : 
 
-Cette visualisation illustre la **phase de traitement** du cycle du renseignement OSINT,
+Cette visualisation a été réalisée pour illustrer la **phase de traitement** du cycle du renseignement OSINT,
 où les données brutes collectées sont transformées en informations exploitables.
 
 ---
@@ -1010,8 +1077,8 @@ Ce ratio permet de comparer les communes entre elles indépendamment de leur tai
 
 Les trois sources (balances comptables, nuances politiques, population INSEE) sont
 fusionnées via le **code INSEE** de chaque commune, garantissant l'unicité des correspondances.
-
-**Communes analysées** : 1 208 communes ayant déclaré des frais de représentation en 2024.
+Dans le fichier des balances comptables, il a fallu reconstituer le code INSEE à partir de 2 colonnes.
+**Communes analysées** : 1 208 communes de France Métropolitaine ayant déclaré des frais de représentation en 2024.
         """)
 
     # Footer avec sources
