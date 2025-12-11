@@ -141,6 +141,16 @@ st.markdown("""
         vertical-align: middle;
         opacity: 0.6;
     }
+    .stTabs [data-baseweb="tab"]:nth-child(5)::before {
+        content: "";
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        margin-right: 6px;
+        background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' fill='none' stroke='currentColor' stroke-width='1.5'%3E%3Cpath d='M19 11V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2h4'/%3E%3Cpath d='M14 15h6v6h-6z'/%3E%3Cpath d='M9 9h6M9 13h3'/%3E%3C/svg%3E") center/contain no-repeat;
+        vertical-align: middle;
+        opacity: 0.6;
+    }
     .stTabs [aria-selected="true"]::before {
         filter: invert(1);
         opacity: 1;
@@ -266,12 +276,16 @@ def load_data():
     )
 
     # Nettoyage des colonnes numériques (virgule -> point)
-    for col in ['FRAIS_REPRESENTATION', 'EUR_PAR_HAB']:
-        if df[col].dtype == 'object':
-            df[col] = df[col].astype(str).str.replace(',', '.').str.replace(' ', '')
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
-        else:
-            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+    numeric_cols = ['FRAIS_REPRESENTATION', 'EUR_PAR_HAB', 'TOTAL_CHARGES',
+                    'CHARGES_PERSONNEL', 'ACHATS_SERVICES', 'CHARGES_FINANCIERES',
+                    'CHARGES_EXCEPT', 'AUTRES_CHARGES_GESTION', 'RATIO_FRAIS_REP']
+    for col in numeric_cols:
+        if col in df.columns:
+            if df[col].dtype == 'object':
+                df[col] = df[col].astype(str).str.replace(',', '.').str.replace(' ', '')
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
+            else:
+                df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
 
     # Nettoyage population
     df['POP_2022'] = pd.to_numeric(
@@ -482,7 +496,7 @@ def main():
     st.markdown("---")
 
     # Onglets principaux
-    tab1, tab2, tab3, tab4 = st.tabs(["Carte", "Tableau", "Analyses", "Palmarès"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["Carte", "Tableau", "Analyses", "Palmarès", "Budget"])
 
     # TAB 1 - CARTE
     with tab1:
@@ -549,20 +563,33 @@ def main():
     with tab2:
         st.markdown('<h3><i class="iconoir-table-rows"></i> Données détaillées</h3>', unsafe_allow_html=True)
 
+        # Option pour afficher les colonnes budget
+        show_budget = st.checkbox("Afficher les données budgétaires", value=False)
+
         # Colonnes à afficher
         columns_display = ['CODE_COMMUNE', 'NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022',
                           'FRAIS_REPRESENTATION', 'EUR_PAR_HAB', 'COUL_POL']
 
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+            columns_display.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
+
         # Options de tri
+        sort_options = ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'POP_2022', 'NOM_COMMUNE']
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+            sort_options.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
+
         sort_col = st.selectbox(
             "Trier par :",
-            options=['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'POP_2022', 'NOM_COMMUNE'],
+            options=sort_options,
             format_func=lambda x: {
                 'EUR_PAR_HAB': 'EUR par habitant',
                 'FRAIS_REPRESENTATION': 'Frais totaux',
                 'POP_2022': 'Population',
-                'NOM_COMMUNE': 'Nom commune'
-            }[x]
+                'NOM_COMMUNE': 'Nom commune',
+                'TOTAL_CHARGES': 'Charges totales',
+                'CHARGES_PERSONNEL': 'Charges personnel',
+                'RATIO_FRAIS_REP': 'Ratio frais rep.'
+            }.get(x, x)
         )
 
         sort_order = st.checkbox("Ordre décroissant", value=True)
@@ -573,12 +600,20 @@ def main():
         )
 
         # Renommer les colonnes pour l'affichage
-        df_display.columns = ['INSEE', 'Commune', 'Dépt', 'Population', 'Frais (€)', 'EUR/hab', 'Politique']
+        col_names = ['INSEE', 'Commune', 'Dépt', 'Population', 'Frais (€)', 'EUR/hab', 'Politique']
+        if show_budget and 'TOTAL_CHARGES' in df_filtered.columns:
+            col_names.extend(['Charges tot. (€)', 'Personnel (€)', 'Ratio (%)'])
+        df_display.columns = col_names
 
         # Formatage français des colonnes numériques
         df_display['Population'] = df_display['Population'].apply(lambda x: fmt_fr(x))
         df_display['Frais (€)'] = df_display['Frais (€)'].apply(lambda x: fmt_fr(x, 2))
         df_display['EUR/hab'] = df_display['EUR/hab'].apply(lambda x: fmt_fr(x, 2))
+
+        if show_budget and 'Charges tot. (€)' in df_display.columns:
+            df_display['Charges tot. (€)'] = df_display['Charges tot. (€)'].apply(lambda x: fmt_fr(x))
+            df_display['Personnel (€)'] = df_display['Personnel (€)'].apply(lambda x: fmt_fr(x))
+            df_display['Ratio (%)'] = df_display['Ratio (%)'].apply(lambda x: fmt_fr(x * 100, 3))
 
         st.dataframe(
             df_display,
@@ -759,6 +794,140 @@ def main():
         stats_pol['Total frais (€)'] = stats_pol['Total frais (€)'].apply(lambda x: fmt_fr(x))
         stats_pol['Nb communes'] = stats_pol['Nb communes'].apply(lambda x: fmt_fr(x))
         st.dataframe(stats_pol, use_container_width=True)
+
+    # TAB 5 - BUDGET
+    with tab5:
+        st.markdown('<h3><i class="iconoir-wallet"></i> Analyse budgétaire</h3>', unsafe_allow_html=True)
+        st.markdown("Comparaison des frais de représentation avec le budget global des communes")
+
+        # Vérifier que les colonnes budget existent
+        if 'TOTAL_CHARGES' in df_filtered.columns and df_filtered['TOTAL_CHARGES'].sum() > 0:
+
+            # Métriques budget
+            col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+            with col_b1:
+                total_charges = df_filtered['TOTAL_CHARGES'].sum()
+                st.metric("Total charges", f"{fmt_fr(total_charges / 1e9, 2)} Mds €")
+            with col_b2:
+                total_personnel = df_filtered['CHARGES_PERSONNEL'].sum()
+                st.metric("Charges personnel", f"{fmt_fr(total_personnel / 1e9, 2)} Mds €")
+            with col_b3:
+                ratio_moy = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0]['RATIO_FRAIS_REP'].mean()
+                st.metric("Ratio frais rep. moyen", f"{fmt_fr(ratio_moy * 100, 3)} %")
+            with col_b4:
+                ratio_max = df_filtered['RATIO_FRAIS_REP'].max()
+                st.metric("Ratio frais rep. max", f"{fmt_fr(ratio_max * 100, 2)} %")
+
+            st.markdown("---")
+
+            col_bg1, col_bg2 = st.columns(2)
+
+            with col_bg1:
+                # Répartition des charges (top 10 communes)
+                st.markdown("#### Répartition des charges (Top 10 communes)")
+                top10_budget = df_filtered.nlargest(10, 'TOTAL_CHARGES')
+
+                # Préparer les données pour le graphique empilé
+                budget_data = []
+                for _, row in top10_budget.iterrows():
+                    budget_data.append({
+                        'Commune': row['NOM_COMMUNE'][:15],
+                        'Personnel': row['CHARGES_PERSONNEL'] / 1e6,
+                        'Achats/Services': row['ACHATS_SERVICES'] / 1e6,
+                        'Autres gestion': row['AUTRES_CHARGES_GESTION'] / 1e6,
+                        'Financières': row['CHARGES_FINANCIERES'] / 1e6,
+                        'Exceptionnelles': row['CHARGES_EXCEPT'] / 1e6
+                    })
+
+                df_budget = pd.DataFrame(budget_data)
+                fig_budget = px.bar(
+                    df_budget,
+                    x='Commune',
+                    y=['Personnel', 'Achats/Services', 'Autres gestion', 'Financières', 'Exceptionnelles'],
+                    title="",
+                    labels={'value': 'Millions €', 'variable': 'Type de charge'},
+                    color_discrete_sequence=['#3498db', '#2ecc71', '#f39c12', '#e74c3c', '#9b59b6']
+                )
+                fig_budget.update_layout(
+                    xaxis_title="",
+                    yaxis_title="Millions €",
+                    legend_title="",
+                    barmode='stack',
+                    separators=", "
+                )
+                st.plotly_chart(fig_budget, use_container_width=True)
+
+            with col_bg2:
+                # Scatter : Charges totales vs Frais de représentation
+                st.markdown("#### Charges totales vs Frais de représentation")
+                fig_scatter_budget = px.scatter(
+                    df_filtered[df_filtered['TOTAL_CHARGES'] > 0],
+                    x='TOTAL_CHARGES',
+                    y='FRAIS_REPRESENTATION',
+                    color='COUL_POL',
+                    hover_name='NOM_COMMUNE',
+                    hover_data=['POP_2022', 'RATIO_FRAIS_REP'],
+                    opacity=0.6,
+                    color_discrete_map={
+                        'Gauche': '#e74c3c',
+                        'Droite': '#3498db',
+                        'Centre': '#f39c12',
+                        'Extrême droite': '#1a1a2e',
+                        'Courants politiques divers': '#9b59b6',
+                        'Non classé': '#95a5a6',
+                    }
+                )
+                fig_scatter_budget.update_layout(
+                    xaxis_title="Charges totales (€)",
+                    yaxis_title="Frais de représentation (€)",
+                    xaxis_type="log",
+                    yaxis_type="log",
+                    separators=", "
+                )
+                st.plotly_chart(fig_scatter_budget, use_container_width=True)
+
+            # Distribution du ratio frais de représentation
+            st.markdown("#### Distribution du ratio frais de représentation / charges totales")
+            df_ratio = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0].copy()
+            df_ratio['RATIO_PERCENT'] = df_ratio['RATIO_FRAIS_REP'] * 100
+
+            fig_ratio = px.histogram(
+                df_ratio,
+                x='RATIO_PERCENT',
+                nbins=50,
+                color='COUL_POL',
+                marginal='box',
+                color_discrete_map={
+                    'Gauche': '#e74c3c',
+                    'Droite': '#3498db',
+                    'Centre': '#f39c12',
+                    'Extrême droite': '#1a1a2e',
+                    'Courants politiques divers': '#9b59b6',
+                    'Non classé': '#95a5a6',
+                }
+            )
+            fig_ratio.update_layout(
+                xaxis_title="Ratio frais représentation / charges totales (%)",
+                yaxis_title="Nombre de communes",
+                separators=", "
+            )
+            st.plotly_chart(fig_ratio, use_container_width=True)
+
+            # Top communes par ratio
+            st.markdown("#### Top 20 communes avec le plus haut ratio frais de représentation")
+            top_ratio = df_filtered[df_filtered['RATIO_FRAIS_REP'] > 0].nlargest(20, 'RATIO_FRAIS_REP')[
+                ['NOM_COMMUNE', 'DEPARTEMENT', 'POP_2022', 'FRAIS_REPRESENTATION',
+                 'TOTAL_CHARGES', 'RATIO_FRAIS_REP', 'COUL_POL']
+            ].reset_index(drop=True)
+            top_ratio.columns = ['Commune', 'Dépt', 'Pop.', 'Frais rep. (€)', 'Charges totales (€)', 'Ratio (%)', 'Politique']
+            top_ratio['Pop.'] = top_ratio['Pop.'].apply(lambda x: fmt_fr(x))
+            top_ratio['Frais rep. (€)'] = top_ratio['Frais rep. (€)'].apply(lambda x: fmt_fr(x, 2))
+            top_ratio['Charges totales (€)'] = top_ratio['Charges totales (€)'].apply(lambda x: fmt_fr(x))
+            top_ratio['Ratio (%)'] = top_ratio['Ratio (%)'].apply(lambda x: fmt_fr(x * 100, 3))
+            st.dataframe(top_ratio, use_container_width=True, hide_index=True)
+
+        else:
+            st.warning("Les données budgétaires ne sont pas disponibles pour cette sélection.")
 
     # Footer avec sources
     st.markdown("---")

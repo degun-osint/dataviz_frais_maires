@@ -5,3 +5,5 @@ __pycache__/
 *.lock
 .DS_Store
 .claude/
+/SOURCES
+*_backup_*.csv
