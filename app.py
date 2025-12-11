@@ -597,6 +597,16 @@ def main():
                     key="search_commune"
                 )
 
+                # Filtre par département
+                depts_disponibles = sorted(df_filtered['DEPARTEMENT'].dropna().unique().tolist())
+                selected_depts = st.multiselect(
+                    "Filtrer par département(s)",
+                    options=depts_disponibles,
+                    default=[],
+                    placeholder="Tous les départements",
+                    key="table_depts"
+                )
+
                 # Filtre EUR/hab
                 eur_range = st.slider(
                     "EUR par habitant",
@@ -636,6 +646,9 @@ def main():
 
         if search_commune:
             df_table = df_table[df_table['NOM_COMMUNE'].str.contains(search_commune, case=False, na=False)]
+
+        if selected_depts:
+            df_table = df_table[df_table['DEPARTEMENT'].isin(selected_depts)]
 
         df_table = df_table[
             (df_table['EUR_PAR_HAB'] >= eur_range[0]) &
