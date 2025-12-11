@@ -660,12 +660,12 @@ def main():
                           'FRAIS_REPRESENTATION', 'EUR_PAR_HAB', 'COUL_POL']
 
         if show_budget and 'TOTAL_CHARGES' in df_table.columns:
-            columns_display.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
+            columns_display.extend(['TOTAL_CHARGES', 'RATIO_FRAIS_REP'])
 
         # Options de tri
         sort_options = ['EUR_PAR_HAB', 'FRAIS_REPRESENTATION', 'POP_2022', 'NOM_COMMUNE']
         if show_budget and 'TOTAL_CHARGES' in df_table.columns:
-            sort_options.extend(['TOTAL_CHARGES', 'CHARGES_PERSONNEL', 'RATIO_FRAIS_REP'])
+            sort_options.extend(['TOTAL_CHARGES', 'RATIO_FRAIS_REP'])
 
         sort_col = st.selectbox(
             "Trier par :",
@@ -676,7 +676,6 @@ def main():
                 'POP_2022': 'Population',
                 'NOM_COMMUNE': 'Nom commune',
                 'TOTAL_CHARGES': 'Charges totales',
-                'CHARGES_PERSONNEL': 'Charges personnel',
                 'RATIO_FRAIS_REP': 'Ratio frais rep.'
             }.get(x, x)
         )
@@ -691,7 +690,7 @@ def main():
         # Renommer les colonnes pour l'affichage
         col_names = ['INSEE', 'Commune', 'Dépt', 'Population', 'Frais (€)', 'EUR/hab', 'Politique']
         if show_budget and 'TOTAL_CHARGES' in df_table.columns:
-            col_names.extend(['Charges tot. (€)', 'Personnel (€)', 'Ratio (%)'])
+            col_names.extend(['Charges tot. (€)', 'Ratio (%)'])
         df_display.columns = col_names
 
         # Formatage français des colonnes numériques
@@ -701,7 +700,6 @@ def main():
 
         if show_budget and 'Charges tot. (€)' in df_display.columns:
             df_display['Charges tot. (€)'] = df_display['Charges tot. (€)'].apply(lambda x: fmt_fr(x))
-            df_display['Personnel (€)'] = df_display['Personnel (€)'].apply(lambda x: fmt_fr(x))
             df_display['Ratio (%)'] = df_display['Ratio (%)'].apply(lambda x: fmt_fr(x, 3))
 
         st.dataframe(
